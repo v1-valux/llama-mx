@@ -18,8 +18,8 @@ All commands customizable.
 
 **Using the bot:**
 
-```sh
-sh start-ollama-mx.sh
+```python
+python start-ollama-mx.py /path/to/config.yaml
 
 ```
 
