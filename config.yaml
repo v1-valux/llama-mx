@@ -1,0 +1,58 @@
+# LOCAL SETTINGS
+
+# Language for LLM and STT prompts
+language: 'en'
+
+storage:
+  store_path: '/data/store'
+  media_path: '/data/media'
+  credentials_path: '/data'
+
+stt:
+# stt api source
+# choose between 'whisper-asr' (default), 'localai', and more (work in progress)
+  source: 'whisper-asr'
+  host: 'localhost'
+  port: 9000
+llm:
+# llm api source
+# choose between 'ollama' (default), 'localai', and more (work in progress)
+  source: 'ollama'
+  host: 'localhost'
+  port: 11434
+  models:
+   - prefix: '#eva'
+     model_name: 'eva-german'
+     language: 'de'
+   - prefix: '#ml'
+     model_name: 'mistral-german'
+     language: 'de'
+   - prefix: '#text'
+     model_name: 'llama3'
+     language: 'en'
+   - prefix: '#code'
+     model_name: 'codellama'
+     language: 'en'
+
+commands:
+  help: '#help'
+  visual_assist: '#cc'
+  transcribe: '#cc'
+  summarize: '#sum'
+
+# Logging setup
+logging:
+  # Logging level
+  # Allowed levels are 'INFO', 'WARNING', 'ERROR', 'DEBUG'
+  # where DEBUG is most verbose
+  level: INFO
+  # Configure logging to a file
+  file_logging:
+    # Whether logging to a file is enabled
+    enabled: false
+    # The path to the file to log to. May be relative or absolute
+    filepath: bot.log
+  # Configure logging to the console output
+  console_logging:
+    # Whether logging to the console is enabled
+    enabled: true

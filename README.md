@@ -3,18 +3,16 @@
 A [matrix-commander](https://github.com/8go/matrix-commander) bot with AI functions for transcribing Voice Messages and prompting LLMs and LVAs in [matrix](https://matrix.org/) chatrooms.
 
 **Core functions:**
-- transcribe audio files by replying to file with `#cc` (powered by [OpenAI-Whisper](https://openai.com/research/whisper))
-- summarize audio-files / voice messages by replying to file with `#sum`
-- describe images by replying to image with `#cc` (powered by [LLaVA](https://llava-vl.github.io/))
+- transcribe audio files by replying to file with specific self-defined  (powered by [OpenAI-Whisper](https://openai.com/research/whisper))
+- describe images by replying to image with self-defined commands and prompts (powered by [LLaVA](https://llava-vl.github.io/))
+- summarize audio-files / voice messagesby replying to file with self-defined commands.
 - prompt a specific language model by using self-defined prefixes (like `#text` or `#code`)
 - API support for LLMs ([Ollama](https://ollama.com)), STT ([whisper-asr-webservice](https://github.com/ahmetoner/whisper-asr-webservice)) and [LocalAI](https://localai.io/) for both.
 
 All commands customizable.
 
-
 **Wishlist:**
 
-- config file support
 - chat-history support
 - support more API sources
 
