@@ -11,8 +11,16 @@ A [matrix-commander](https://github.com/8go/matrix-commander) bot with AI functi
 
 All commands customizable.
 
-**Wishlist:**
+**Known Bugs:**
 
+- only media received while the bot is running can be processed  
+- media is downloaded automatically and stored unencrypted
+
+
+**Wish List:**
+
+- get media files on demand (e.g. retrieving via rest-api)
+- auto-delete media after some time
 - chat-history support
 - support more API sources
 
