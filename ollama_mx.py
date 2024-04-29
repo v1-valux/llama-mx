@@ -24,9 +24,9 @@ nest_asyncio.apply()
 logger = logging.getLogger()
 
 class Config(object):
-	"""
+	'''
 	Create config object.
-	"""
+	'''
 
 	def __init__(self, filepath):
 		'''
@@ -117,18 +117,9 @@ class Config(object):
 			default: Any = None,
 			required: bool = True,
 	) -> Any:
-		"""Get a config option.
-
-		Get a config option from a path and option name,
-		specifying whether it is required.
-
-		Raises
-		------
-			config_error: If required is specified and the object is not found
-				(and there is no default value provided),
-				this error will be raised.
-
-		"""
+		'''
+		Get a config option.
+		'''
 		# Sift through the the config until we reach our option
 		config = self.config
 		for name in path:
@@ -146,7 +137,6 @@ class Config(object):
 		
 		# We found the option. Return it
 		return config
-
 
 # Read config file
 if len(sys.argv) > 1:
@@ -263,9 +253,14 @@ class MatrixBot():
 						related_sender_id = relation_msg.replace('> ','').replace('<','').replace(replyto_audio,'').replace(replyto_image,'')
 						related_event = event['source']['content']['m.relates_to']['m.in_reply_to']['event_id']
 						
+						## retrieve access token
+						#with open(os.path.join(credentials_path,'credentials.json')) as file_stream:
+						#	access_token = json.loads(file_stream.read())['access_token']
+						
 						# I planned to get media by eventId and an api call
-						#process = Popen(['matrix-commander', '--no-ssl', '--store', config.store_path, "--rest", "get", "", f"https://{matrix_host}/_matrix/client/v3/rooms/{room_id}/events/{rel_event}", '-o', 'JSON'], stdout=PIPE, stderr=PIPE)
+						#process = Popen(['matrix-commander', '--no-ssl', '--access-token', access_token, '--store', config.store_path, "--rest", "get", "", f"https://{matrix_host}/_matrix/client/v3/rooms/{room_id}/events/{related_event}?access_token=access_token", '-o', 'JSON'], stdout=PIPE, stderr=PIPE)
 						#stdout, stderr = process.communicate()
+						# Load in the config file at the given filepath
 						
 						# get the first word after ".\n\n"
 						command = reply_text.split(' ')[0]
@@ -369,14 +364,22 @@ class MatrixBot():
 			if i > 0:
 				_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
 		output = f'''
-AI chat functions: \n\n\
-- transcribe audio files by replying to file with `#cc`\n\
-- summarize audio-files / voice messages by replying to file with `#sum`\n\
-- describe images by replying to image with `#cc`\n\
-- prompt a language model by using prefixes (no chat-history support yet)\n\
-\n\
-Available prefixes for LLMs: \n\n\
+### Ollama-mx chat functions: \n\n
+#### Voice Messages / Audio Files\n\n
+Reply to an audio files with following options:\n\n
+**{config.audio_command}** - transcribe voice messages to text\n\n
+**{config.summary_command}** - summarize voice messages\n\n
+#### Images\n\n
+Reply to an image file with the following options:\n\n
+**{config.image_command}** - describe whats on an image.\n\n
+**{config.image_command}** **`prompt`** - ask a specific question about an image\n\n
+#### Example\n
+<mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an image.</blockquote></mx-reply>`{config.image_command} what could that meme have to do with Maths?`\n\n
+\n\n\
+#### LLM Prompts
+Prompt a language model by using prefixes:\n\n
 {_str}
+\n\n
 '''
 		return output
 		
@@ -506,13 +509,16 @@ class LLMPrompter():
 			
 			if command == config.summary_command:
 				
-				for model in config.llm_models:
-					# see if a multilingual model is available in model list
-					if model['language'] == config.language:
-						model_name = model['model_name']
-
 				# Multilingual Summary Prompts
-				if config.language == 'en':
+				if config.language != 'en':
+					# see if a localized model is available in model list
+					local_models = []
+					for model in config.llm_models:
+						if model['language'] == config.language:
+							local_models.append(model['model_name'])
+					# take the first found localized model
+					model_name = local_models[0]
+				else:
 					prompt = f'Give me a short summary of the following monologue: \n\n{prompt}'
 				if config.language == 'de':
 					prompt = f'Gib mir eine kurze Zusammenfassung des folgenden Monologs: \n\n{prompt}'
@@ -522,11 +528,11 @@ class LLMPrompter():
 					prompt = f'Geef me een korte samenvatting van de volgende monoloog: \n\n{prompt}'
 				if config.language == 'fr':
 					prompt = f'Fais-moi un bref résumé du monologue suivant: \n\n{prompt}'
-
-			if model_name == None:
-				# fallback model (like above)
-				model_name = config.llm_models[0]['model_name']
-			
+				
+				# fallback model
+				if model_name == None:
+					model_name = config.llm_models[0]['model_name']
+				
 			if config.llm_source == 'ollama':
 				
 				prompt_data = {
@@ -583,7 +589,7 @@ class LLMPrompter():
 				}
 			}
 
-		logger.info(f'Calling {model_name} via {config.llm_source} API ..')
+		logger.info(f'Prompting "{model_name}" via {config.llm_source} API ..')
 		logger.debug(f'Prompt: "{prompt}"')
 		
 		# Make a POST request to the server
@@ -632,7 +638,7 @@ class STTPrompter():
 		# pass the audio-file to whisper
 		file = {'audio_file': data}
 		
-		logger.info(f'prompting audio_file via {config.stt_source} api ..')
+		logger.info(f'Calling {config.stt_source} API with audio file ..')
 		
 		# Make a POST request to the server
 		if config.stt_source == 'whisper-asr':
