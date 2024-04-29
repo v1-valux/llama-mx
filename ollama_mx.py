@@ -206,7 +206,7 @@ class MatrixBot():
 				event = stdout.decode()
 				event = json.loads(event)
 			except Exception as e:
-				logger.warning(f"Non-JSON Output received: {event}")
+				logger.debug(f"Non-JSON Output received: {event}")
 			
 			# process room info for response
 			room_id = event['source']['room_id']
@@ -509,16 +509,16 @@ class LLMPrompter():
 			
 			if command == config.summary_command:
 				
+				# see if a native model is available in model list
+				native_models = []
+				for model in config.llm_models:
+					if model['language'] == config.language:
+						native_models.append(model['model_name'])
+				# take the first found native model
+				model_name = native_models[0]
+				
 				# Multilingual Summary Prompts
-				if config.language != 'en':
-					# see if a localized model is available in model list
-					local_models = []
-					for model in config.llm_models:
-						if model['language'] == config.language:
-							local_models.append(model['model_name'])
-					# take the first found localized model
-					model_name = local_models[0]
-				else:
+				if config.language == 'en':
 					prompt = f'Give me a short summary of the following monologue: \n\n{prompt}'
 				if config.language == 'de':
 					prompt = f'Gib mir eine kurze Zusammenfassung des folgenden Monologs: \n\n{prompt}'

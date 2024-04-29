@@ -13,6 +13,7 @@ All commands customizable.
 
 **Known Bugs:**
 
+- bot crashes if receiving multiple messages at the same time (e.g. startup after some downtime)
 - only media received while the bot is running can be processed  
 - media is downloaded automatically and stored unencrypted
 
@@ -38,4 +39,4 @@ The code might be ugly and things could be more safe and much cleaner but this i
 Framework by [#philipphoehn](https://github.com/philipphoehn).
 
 
-If you like it, star it - If you don't, contribute or fork it. :)
+If you like it, star it - If you don't, contribute or fork it. ?
