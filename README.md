@@ -38,4 +38,4 @@ The code might be ugly and things could be more safe and much cleaner but this i
 Framework by [#philipphoehn](https://github.com/philipphoehn).
 
 
-If you like it, star it - If you don't, contribute or fork it. ?
+If you like it, star it - If you don't, contribute or fork it. :)
