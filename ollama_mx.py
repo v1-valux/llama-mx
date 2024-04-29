@@ -205,127 +205,124 @@ class MatrixBot():
 			try:
 				event = stdout.decode()
 				event = json.loads(event)
-			except Exception as e:
-				logger.debug(f"Non-JSON Output received: {event}")
-			
-			# process room info for response
-			room_id = event['source']['room_id']
-			room_name = event['room_display_name']
-			sender_id = event['source']['sender']
-			msg_body = event['source']['content']['body']
-			msg_type = event['source']['content']['msgtype']
-			
-			# return room info
-			room_ids.append(room_id)
-			sender_ids.append(sender_id)
-			
-			logger.debug(f'{event}')
-			
-			# proceed only if output contains (somewhat valid) sender_id
-			if sender_id.startswith('@'):
 				
-				logger.debug(f'Received text message: {msg_body}')
-				if msg_type == 'm.text':
-					
-					replyto_audio = 'sent an audio file'
-					replyto_image = 'sent an image'
-									
-					audio_trigger = (replyto_audio in msg_body and any(x in msg_body for x in [config.audio_command,config.summary_command]))
-					image_trigger = (replyto_image in msg_body and config.image_command in msg_body)
-					media_triggers = (any(x in msg_body for x in self.media_commands))
-					llm_trigger = (any(x in msg_body for x in self.llm_commands))
-					
-					# media commands
-					if audio_trigger or image_trigger:
-						
-						# using the default matrix settings 
-						# we receive a reply_to message as follows:
-						# "> <@username:example.com> sent an audio file.\n\n{REPLY_MESSAGE}"
-						# trying to filter out media_type and reply message
-						
-						trigger_sent = '> sent an'
-						trigger_cr = '.\n\n'
-						
-						# get everything before and after ".\n\n"
-						relation_msg = msg_body.split(trigger_cr)[0]
-						reply_text = msg_body.split(trigger_cr)[-1]
-						
-						related_sender_id = relation_msg.replace('> ','').replace('<','').replace(replyto_audio,'').replace(replyto_image,'')
-						related_event = event['source']['content']['m.relates_to']['m.in_reply_to']['event_id']
-						
-						## retrieve access token
-						#with open(os.path.join(credentials_path,'credentials.json')) as file_stream:
-						#	access_token = json.loads(file_stream.read())['access_token']
-						
-						# I planned to get media by eventId and an api call
-						#process = Popen(['matrix-commander', '--no-ssl', '--access-token', access_token, '--store', config.store_path, "--rest", "get", "", f"https://{matrix_host}/_matrix/client/v3/rooms/{room_id}/events/{related_event}?access_token=access_token", '-o', 'JSON'], stdout=PIPE, stderr=PIPE)
-						#stdout, stderr = process.communicate()
-						# Load in the config file at the given filepath
-						
-						# get the first word after ".\n\n"
-						command = reply_text.split(' ')[0]
-						
-						logger.debug(f'Triggered by reply to media with "{command}" command from {sender_id}.')
-						
-						# prompts should be min. 3 characters long
-						if f'{command} ' in msg_body and len(reply_text.split(f'{command} ')[-1]) > 2:
-							prompt = reply_text.split(f'{command} ')[-1]
-							logger.debug(f'Custom text prompt provided: "{prompt}"')
-						else:
-							prompt = ''
-						
-						
-						if audio_trigger:
-							
-							related_media = 'audio'
-							
-							# logging only
-							if command == config.summary_command:
-								logger.debug(f'Processing summary of audio-file (sent by {related_sender_id}"): {related_event}')
-							elif command == config.audio_command:
-								logger.debug(f'Processing transcription of audio-file (sent by {related_sender_id}): {related_event}')
-						
-						elif image_trigger:
-							
-							related_media = 'image'
+				# process room info for response
+				room_id = event['source']['room_id']
+				room_name = event['room_display_name']
+				sender_id = event['source']['sender']
+				msg_body = event['source']['content']['body']
+				msg_type = event['source']['content']['msgtype']
 
-							# loggin only
-							logger.debug(f'Processing description of image-file (sent by {related_sender_id}): {related_event}')
+				# return room info
+				room_ids.append(room_id)
+				sender_ids.append(sender_id)
 
-						# pass event
-						related_events.append(related_event)
-						# pass media type
-						related_media_types.append(related_media)
-						# pass command (mandatory)
-						commands.append(command)							
-						# pass prompt (mandatory)
-						texts.append(prompt)
-					
-					# LLM commands
-					elif llm_trigger: 
-						
-						# get the first word after ".\n\n"
-						command = msg_body.split(' ')[0]
-						
-						# get rid of prepending spaces in prompt
-						if f'{command} ' in msg_body and len(msg_body.split(f'{command} ')[-1]) > 2:
-							prompt = msg_body.split(f'{command} ')[-1]
-							logger.debug(f'Triggered by LLM command "{command}" from {sender_id} with prompt: {prompt}')
-							# pass command
-							commands.append(command)
-							# pass prompt
+				# proceed only if output contains (somewhat valid) sender_id
+				if sender_id.startswith('@'):
+
+					logger.debug(f'Received text message: {msg_body}')
+					if msg_type == 'm.text':
+
+						replyto_audio = 'sent an audio file'
+						replyto_image = 'sent an image'
+
+						audio_trigger = (replyto_audio in msg_body and any(x in msg_body for x in [config.audio_command,config.summary_command]))
+						image_trigger = (replyto_image in msg_body and config.image_command in msg_body)
+						media_triggers = (any(x in msg_body for x in self.media_commands))
+						llm_trigger = (any(x in msg_body for x in self.llm_commands))
+
+						# media commands
+						if audio_trigger or image_trigger:
+
+							# using the default matrix settings 
+							# we receive a reply_to message as follows:
+							# "> <@username:example.com> sent an audio file.\n\n{REPLY_MESSAGE}"
+							# trying to filter out media_type and reply message
+
+							trigger_sent = '> sent an'
+							trigger_cr = '.\n\n'
+
+							# get everything before and after ".\n\n"
+							relation_msg = msg_body.split(trigger_cr)[0]
+							reply_text = msg_body.split(trigger_cr)[-1]
+
+							related_sender_id = relation_msg.replace('> ','').replace('<','').replace(replyto_audio,'').replace(replyto_image,'')
+							related_event = event['source']['content']['m.relates_to']['m.in_reply_to']['event_id']
+
+							## retrieve access token
+							#with open(os.path.join(credentials_path,'credentials.json')) as file_stream:
+							#	access_token = json.loads(file_stream.read())['access_token']
+
+							# I planned to get media by eventId and an api call
+							#process = Popen(['matrix-commander', '--no-ssl', '--access-token', access_token, '--store', config.store_path, "--rest", "get", "", f"https://{matrix_host}/_matrix/client/v3/rooms/{room_id}/events/{related_event}?access_token=access_token", '-o', 'JSON'], stdout=PIPE, stderr=PIPE)
+							#stdout, stderr = process.communicate()
+							# Load in the config file at the given filepath
+
+							# get the first word after ".\n\n"
+							command = reply_text.split(' ')[0]
+
+							logger.debug(f'Triggered by reply to media with "{command}" command from {sender_id}.')
+
+							# prompts should be min. 3 characters long
+							if f'{command} ' in msg_body and len(reply_text.split(f'{command} ')[-1]) > 2:
+								prompt = reply_text.split(f'{command} ')[-1]
+								logger.debug(f'Custom text prompt provided: "{prompt}"')
+							else:
+								prompt = ''
+
+
+							if audio_trigger:
+
+								related_media = 'audio'
+
+								# logging only
+								if command == config.summary_command:
+									logger.debug(f'Processing summary of audio-file (sent by {related_sender_id}"): {related_event}')
+								elif command == config.audio_command:
+									logger.debug(f'Processing transcription of audio-file (sent by {related_sender_id}): {related_event}')
+
+							elif image_trigger:
+
+								related_media = 'image'
+
+								# loggin only
+								logger.debug(f'Processing description of image-file (sent by {related_sender_id}): {related_event}')
+
+							# pass event
+							related_events.append(related_event)
+							# pass media type
+							related_media_types.append(related_media)
+							# pass command (mandatory)
+							commands.append(command)							
+							# pass prompt (mandatory)
 							texts.append(prompt)
-							
-						else:
-							logger.debug(f'No prompt provided, skipping ..')
-					
-					elif msg_body.startswith(config.help_command):
-						
-						# set and pass help command
-						command = config.help_command
-						commands.append(command)
-		
-		sleep(self.sleep_duration)
+
+						# LLM commands
+						elif llm_trigger: 
+
+							# get the first word after ".\n\n"
+							command = msg_body.split(' ')[0]
+
+							# get rid of prepending spaces in prompt
+							if f'{command} ' in msg_body and len(msg_body.split(f'{command} ')[-1]) > 2:
+								prompt = msg_body.split(f'{command} ')[-1]
+								logger.debug(f'Triggered by LLM command "{command}" from {sender_id} with prompt: {prompt}')
+								# pass command
+								commands.append(command)
+								# pass prompt
+								texts.append(prompt)
+
+							else:
+								logger.debug(f'No prompt provided, skipping ..')
+
+						elif msg_body.startswith(config.help_command):
+
+							# set and pass help command
+							command = config.help_command
+							commands.append(command)
+			
+			except Exception as e:
+				logger.debug(f"Parsing of multiple messages not yet implemented: {event}")
 		
 		return commands, texts, room_ids, sender_ids, related_media_types, related_events
 	
@@ -473,7 +470,7 @@ Prompt a language model by using prefixes:\n\n
 				logger.exception("Received keyboard interrupt.")
 				sys.exit(1)
 
-				#sleep(self.sleep_duration)
+			sleep(self.sleep_duration)
 
 class LLMPrompter():
 	
