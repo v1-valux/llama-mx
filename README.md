@@ -18,7 +18,7 @@ All commands customizable via `config.yaml`.
 - media is downloaded automatically and stored unencrypted
 
 **Feature Wish-List:**
-- [ ] auto summarize voice messages (depending on wordcount)
+- [x] auto summarize voice messages (depending on wordcount)
 - [ ] automatically detect language for prompts
 - [ ] get media files on demand (e.g. retrieving via rest-api)
 - [ ] auto-delete media alternatively
