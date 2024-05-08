@@ -3,27 +3,26 @@
 A [matrix-commander](https://github.com/8go/matrix-commander) bot with AI functions for transcribing Voice Messages and prompting LLMs and LMMs (Large Multimodal Models) in [matrix](https://matrix.org/) chatrooms.
 
 **Core functions:**
-- transcribe audio files by replying to file with specific self-defined  (powered by [OpenAI-Whisper](https://openai.com/research/whisper))
-- describe images by replying to image with self-defined commands and prompts (powered by [LLaVA LMM](https://llava-vl.github.io/))
-- summarize audio-files / voice messagesby replying to file with self-defined commands.
+- transcribe audio files by replying to file with specific self-defined commands - needs [whisper-asr-webservice](https://github.com/ahmetoner/whisper-asr-webservice)
+- ask about the contents of images by replying to an `m.image` message with a self-defined command (and prompt) - needs a [LLaVA](https://llava-vl.github.io/) or other LMM
+- summarize audio-files / voice messages by replying to an `m.audio` message with self-defined commands.
 - prompt a specific language model by using self-defined prefixes (like `#text` or `#code`)
-- API support for LLMs/LMMs ([Ollama](https://ollama.com)), STT ([whisper-asr-webservice](https://github.com/ahmetoner/whisper-asr-webservice)) and [LocalAI](https://localai.io/) for both.
+- API support for LLMs/LMMs ([Ollama](https://ollama.com)), STT ([whisper-asr-webservice](https://github.com/ahmetoner/whisper-asr-webservice)) or [LocalAI](https://localai.io/) for a combined solution.
 
-All commands customizable.
+All commands customizable via `config.yaml`.
 
-**Known Bugs:**
+**Known Quirks:**
 
-- not working if receiving multiple messages at the same time (e.g. startup after some downtime)
-- only media received while the bot is running can be processed  
+- bot cannot process any of multiple messages at the same time (e.g. startup after some downtime)
+- only media files received while the bot is running can be processed
 - media is downloaded automatically and stored unencrypted
 
-
-**Wish List:**
-
-- get media files on demand (e.g. retrieving via rest-api)
-- auto-delete media after some time
-- chat-history support
-- support more API sources
+**Feature Wish-List:**
+- [ ] auto summarize voice messages (depending on wordcount)
+- [ ] automatically detect language for prompts
+- [ ] get media files on demand (e.g. retrieving via rest-api)
+- [ ] auto-delete media alternatively
+- [ ] chat-history support
 
 **Using the bot:**
 
