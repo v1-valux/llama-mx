@@ -17,12 +17,15 @@ storage:
   # "/home/username/.local/share/matrix-commander" for normal install
   credentials_path: '/data'
 
+# Speech-To-Text Models
 stt:
 # stt api source
 # choose between 'whisper-asr' (default), 'localai', and more (work in progress)
   source: 'whisper-asr'
   host: 'localhost'
   port: 9000
+
+# Language Models
 llm:
 # llm api source
 # choose between 'ollama' (default), 'localai', and more (work in progress)
@@ -31,18 +34,39 @@ llm:
   port: 11434
   models:
    - prefix: '#eva'
-     model_name: 'eva-german'
+     model_name: 'eva-german:latest'
      language: 'de'
    - prefix: '#ml'
-     model_name: 'mistral-german'
+     model_name: 'mistral-german:latest'
+     language: 'de'
+   - prefix: '#sl'
+     model_name: 'stablelm:12b'
      language: 'de'
    - prefix: '#text'
-     model_name: 'llama3'
+     model_name: 'llama3:latest'
      language: 'en'
    - prefix: '#code'
-     model_name: 'codellama'
+     model_name: 'starcoder2:7b'
      language: 'en'
 
+# Multimodal Models (Image + Text)
+lmm:
+# lmm api source
+# only tested with 'ollama', 'localai' could work
+  source: 'ollama'
+  host: 'localhost'
+  port: 11434
+  models:
+   - prefix: '#lv'
+     model_name: 'llava:latest'
+     language: 'en'
+   - prefix: '#bv'
+     model_name: 'bakllava:latest'
+     language: 'en'
+   - prefix: '#md'
+     model_name: 'moondream:latest'
+     language: 'en'
+  
 commands:
   help: '#help'
   visual_assist: '#cc'

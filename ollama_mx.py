@@ -84,32 +84,44 @@ class Config(object):
 		
 		# API
 		self.stt_source = self._get_cfg(
-			["stt", "source"], required=True, default='whisper-asr')
+			["stt", "source"], default='whisper-asr')
 		self.stt_host = self._get_cfg(
-			["stt", "host"], required=True, default='localhost')
+			["stt", "host"], default='localhost')
 		self.stt_port = self._get_cfg(
 			["stt", "port"], default='9000')
 		
 		self.llm_source = self._get_cfg(
-			["llm", "source"], required=True, default='ollama')
+			["llm", "source"], default='ollama')
 		self.llm_host = self._get_cfg(
-			["llm", "host"], required=True, default='localhost')
+			["llm", "host"], default='localhost')
 		self.llm_port = self._get_cfg(
 			["llm", "port"], default='11434')
 		
-		# Models
+		# Language Models
 		self.llm_models = self._get_cfg(
-			["llm", "models"], required=True, default=[])
+			["llm", "models"], required=True)
+		
+		# Multimodal Models
+		self.lmm_models = self._get_cfg(
+			["lmm", "models"], required=True)
+		
+		self.lmm_default_model = self._get_cfg(
+			["lmm", "default_model"], default=self.lmm_models[0])
 		
 		# Commands
 		self.image_command = self._get_cfg(
-			["commands", "visual_assist"], required=True, default='#cc')
+			["commands", "visual_assist"], required=True, default='')
 		self.audio_command = self._get_cfg(
-			["commands", "transcribe"], required=True, default='#cc')
+			["commands", "transcribe"], required=True, default='')
 		self.summary_command = self._get_cfg(
-			["commands", "summarize"], required=True, default='#sum')
+			["commands", "summarize"], required=True, default='')
 		self.help_command = self._get_cfg(
-			["commands", "help"], required=True, default='#help')
+			["commands", "help"], required=True, default='')
+		
+		# Auto-Transcribtion
+		
+		self.auto_transcribe = self._get_cfg(
+			["auto_transcribe"], required=True, default=False)
 		
 		# Auto-Summarization
 		self.auto_summary = self._get_cfg(
@@ -169,8 +181,12 @@ class MatrixBot():
 		
 		# save all available model prefixes as commands
 		self.llm_commands = []
+		self.lmm_commands = []
+		
 		for model in config.llm_models:
 			self.llm_commands.append(model['prefix'])
+		for model in config.lmm_models:
+			self.lmm_commands.append(model['prefix'])
 		
 		self.media_commands = [
 			config.audio_command,
@@ -184,6 +200,8 @@ class MatrixBot():
 		for command in self.media_commands:
 			self.commands.append(command)
 		for command in self.llm_commands:
+			self.commands.append(command)
+		for command in self.lmm_commands:
 			self.commands.append(command)
 		
 		self.sleep_duration = 1
@@ -209,11 +227,15 @@ class MatrixBot():
 			
 			logger.debug(f'MC Output:{stdout.decode()}')
 			
-			# 
 			try:
 				
-				event = json.loads(stdout.decode())
+				event = stdout.decode()
+				event = json.loads(event)
+					
+			except Exception as e:
+				logger.debug(f"Parsing of multiple messages not yet implemented: {event}")
 				
+			try:
 				# process room info for response
 				event_id = event['source']['event_id']
 				room_id = event['source']['room_id']
@@ -229,20 +251,18 @@ class MatrixBot():
 				# proceed only if output contains (somewhat valid) sender_id
 				if sender_id.startswith('@'):
 					
-					logger.debug(f'Received text message: {msg_body}')
-					
-					
 					if msg_type == 'm.text':
-					
+						
 						audio_trigger = 'sent an audio file'
 						image_trigger = 'sent an image'
-						replied_to_audio = (audio_trigger in msg_body and any(x in msg_body for x in [config.audio_command,config.summary_command]))
-						replied_to_image = (image_trigger in msg_body and config.image_command in msg_body)
-						replied_to_media = (any(x in msg_body for x in self.media_commands))
 						llm_triggered = (any(x in msg_body for x in self.llm_commands))
+						lmm_triggered = (any(x in msg_body for x in self.lmm_commands))
+						replied_to_audio = (audio_trigger in msg_body and any(x in msg_body for x in [config.audio_command,config.summary_command]))
+						replied_to_image = (image_trigger in msg_body and (config.image_command in msg_body or lmm_triggered))
+						used_command = (any(x in msg_body for x in self.commands))
 						
 						# media commands
-						if replied_to_audio or replied_to_image:
+						if used_command and (replied_to_audio or replied_to_image):
 							
 							# using the default matrix settings 
 							# we receive a reply_to message as follows:
@@ -270,10 +290,12 @@ class MatrixBot():
 							
 							# get the first word after ".\n\n"
 							command = reply_text.split(' ')[0]
+							custom_lmm = (image_trigger in msg_body and command in config.lmm_models)
 							
 							logger.debug(f'Triggered by reply to media with "{command}" command from {sender_id}.')
 							
 							# prompts should be min. 3 characters long
+							# get rid of prepending spaces in prompt
 							if f'{command} ' in msg_body and len(reply_text.split(f'{command} ')[-1]) > 2:
 								prompt = reply_text.split(f'{command} ')[-1]
 								logger.debug(f'Custom text prompt provided: "{prompt}"')
@@ -295,7 +317,7 @@ class MatrixBot():
 								related_filetype= 'image'
 								
 								# loggin only
-								logger.debug(f'Processing description of image-file (sent by {related_sender_id}): {related_event}')
+								logger.debug(f'Processing description of image-file (sent by {related_sender_id} - custom model: {custom_lmm}): {related_event}')
 							
 							# pass related event
 							related_events.append(related_event)
@@ -307,11 +329,12 @@ class MatrixBot():
 							texts.append(prompt)
 						
 						# LLM commands
-						elif llm_triggered: 
+						elif used_command and llm_triggered: 
 							
 							# get the first word after ".\n\n"
 							command = msg_body.split(' ')[0]
 							
+							# prompts should be min. 3 characters long
 							# get rid of prepending spaces in prompt
 							if f'{command} ' in msg_body and len(msg_body.split(f'{command} ')[-1]) > 2:
 								prompt = msg_body.split(f'{command} ')[-1]
@@ -331,16 +354,20 @@ class MatrixBot():
 							commands.append(command)
 					
 					elif msg_type == 'm.audio':
-						if config.auto_summary == True:
-							logger.debug('Triggered by audio file (auto-summarization enabled)')
-							filetype='audio'
-							
-							# pass event_id and filetype
-							events.append(event_id)
-							files.append(filetype)
-					
+						
+						if config.auto_transcribe == True or config.auto_summary == True:
+								logger.debug('Triggered by audio file (auto-summarization or auto-transcribtion enabled)')
+								
+								filetype='audio'
+								
+								# pass event_id and filetype
+								events.append(event_id)
+								files.append(filetype)
+					else:
+						logger.debug(f'Received text message: {msg_body}')
+			
 			except Exception as e:
-				logger.debug(f"Parsing of multiple messages not yet implemented: {event}")
+				logger.debug(f"Error handling command '{command}' or prompt '{prompt}'")
 		
 		return events, files, commands, texts, room_ids, sender_ids, related_events, related_files
 	
@@ -372,9 +399,16 @@ class MatrixBot():
 		'''
 		Help command /w model list
 		'''
+		lmm_str = ''
+		llm_str = ''
 		
-		_str = ''
 		for i, r in enumerate(config.llm_models):
+			if i == 0:
+				_str += f"`{r['prefix']}`: {r['model_name']}"
+			if i > 0:
+				_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+		
+		for i, r in enumerate(config.lmm_models):
 			if i == 0:
 				_str += f"`{r['prefix']}`: {r['model_name']}"
 			if i > 0:
@@ -392,9 +426,13 @@ Reply to an image file with the following options:\n\n
 #### Example\n
 <mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an image.</blockquote></mx-reply>`{config.image_command} what could that meme have to do with Maths?`\n\n
 \n\n\
-#### LLM Prompts
-Prompt a language model by using prefixes:\n\n
-{_str}
+#### Multimodal Models:\n\n
+Change model for visual assist. **{config.image_command}** will launch **{config.lmm_default_model}** as default.
+{lmm_str}
+\n\n
+#### Language Models::\n\n
+The following language models are available:\n\n
+{llm_str}
 \n\n
 '''
 		return output
@@ -430,6 +468,8 @@ Prompt a language model by using prefixes:\n\n
 				if len(related_files) > 0:
 					for current, event in enumerate(related_events):
 						file_data = self.retrieve_files(file_type=related_files[current], event_id=event)
+						
+						# process audio files
 						if related_files[current] == 'audio':
 							
 							logger.debug(f'Received "{commands[current]}" command for audio file by "{sender_ids[current]}".')
@@ -441,7 +481,7 @@ Prompt a language model by using prefixes:\n\n
 								if commands[current] == config.summary_command:
 									
 									# call LLM Model
-									llm_output = asyncio.run(self.invoke_LLM.generate(event_type="text", data=commands[current], prompt=stt_output))
+									llm_output = asyncio.run(self.invoke_LLM.generate(event_type="text", data='', command=commands[current], prompt=stt_output))
 									output = llm_output
 							
 							except Exception as e:
@@ -451,11 +491,12 @@ Prompt a language model by using prefixes:\n\n
 								logger.info(f'Sending response to {sender_ids[current]}')
 								asyncio.run(self.send(output, room_ids[current]))
 						
+						# process image files
 						elif related_files[current] == 'image':
 							
 							logger.debug(f'Received "{commands[current]}" command for image file by "{sender_ids[current]}".')
 							try:
-								output = asyncio.run(self.invoke_LLM.generate(event_type="image", data=file_data, prompt=texts[current]))
+								output = asyncio.run(self.invoke_LLM.generate(event_type="image", data=file_data, command=commands[current], prompt=texts[current]))
 							except Exception as e:
 								logger.exception(f"Exception occured: {e}")
 							
@@ -464,6 +505,7 @@ Prompt a language model by using prefixes:\n\n
 								asyncio.run(self.send(output, room_ids[current]))
 						else:
 							logger.debug(f'Wrong media type')
+				
 				# any other commands used?
 				elif len(commands) > 0:
 					for current, command in enumerate(commands):
@@ -473,9 +515,11 @@ Prompt a language model by using prefixes:\n\n
 							
 							logger.debug(f'Received "{commands[current]}" command for audio file by "{sender_ids[current]}".')
 							output = self.print_help()
+						
+						# process LLM command 
 						elif command in self.llm_commands and texts[current] != '':
 							try:
-								output = asyncio.run(self.invoke_LLM.generate(event_type="text", data=command, prompt=texts[current]))
+								output = asyncio.run(self.invoke_LLM.generate(event_type="text", command=command, prompt=texts[current]))
 							except Exception as e:
 								logger.exception(f"Exception occured: {e}")
 						
@@ -487,22 +531,31 @@ Prompt a language model by using prefixes:\n\n
 				elif len(files) > 0:
 					for current, event in enumerate(events):
 						if files[current] == 'audio':
-							logger.debug(f'Received {files[current]} file by "{sender_ids[current]}". Checking word count ..')
 							try:
-								
-								file_data = self.retrieve_files(file_type=files[current], event_id=event)
-								# call STT model
-								stt_output = asyncio.run(self.invoke_STT.generate(data=file_data))
-								
-								if len(stt_output.split(' ')) > config.auto_summary_words:
-									logger.debug(f'Word count in audio file exceeds configured threshold ({len(stt_output.split(" "))}/{config.auto_summary_words}), summarizing "{sender_ids[current]}"\'s audio file ..')
+								if config.auto_summary == True or config.auto_transcribe == True:
+									
+									logger.info(f'Received {files[current]} file by "{sender_ids[current]}"')
+									logger.debug(f'Checking word count ..')
+									
+									file_data = self.retrieve_files(file_type=files[current], event_id=event)
+									# call STT model
+									stt_output = asyncio.run(self.invoke_STT.generate(data=file_data))
 									output = stt_output
 									
-									# call LLM Model
-									llm_output = asyncio.run(self.invoke_LLM.generate(event_type="text", data=config.summary_command, prompt=stt_output))
-									output = llm_output
-								else:
-									logger.debug(f'Word count in audio file is below configured threshold. ({len(stt_output.split(" "))}/{config.auto_summary_words}) ')
+									if config.auto_summary == True:
+										
+										if (stt_output.split(' ')) > config.auto_summary_words:
+											
+											logger.info(f'Auto-summarizing {len(stt_output.split(" "))} words ..')
+											logger.debug(f'Word count in audio file exceeds threshold ({len(stt_output.split(" "))}/{config.auto_summary_words}), summarizing "{sender_ids[current]}"\'s audio file ..')
+											
+											# call LLM Model
+											llm_output = asyncio.run(self.invoke_LLM.generate(event_type="text", data='', command=config.summary_command, prompt=stt_output))
+											output = llm_output
+											
+										else:
+											logger.debug(f'Word count in audio file is below configured threshold. ({len(stt_output.split(" "))}/{config.auto_summary_words}) ')
+							
 							except Exception as e:
 								logger.exception(f"Exception occured: {e}")
 							
@@ -510,7 +563,7 @@ Prompt a language model by using prefixes:\n\n
 								logger.info(f'Sending response to {sender_ids[current]}')
 								asyncio.run(self.send(output, room_ids[current]))
 						
-			except Exception  as e:
+			except Exception as e:
 				logger.exception(f"Error in main loop: {e}")
 				sys.exit(1)
 			except KeyboardInterrupt:
@@ -537,7 +590,7 @@ class LLMPrompter():
 		
 		self.llm_api = llm_url
 	
-	async def generate(self, event_type, data, prompt):
+	async def generate(self, event_type, data, command, prompt):
 		'''
 		Generate response.
 		'''
@@ -546,7 +599,6 @@ class LLMPrompter():
 		if event_type == 'text':
 			
 			# set model by command contained in data
-			command = data
 			for model in config.llm_models:
 				# see if model command is in model prefix list
 				if model['prefix'] in command:
@@ -615,19 +667,26 @@ class LLMPrompter():
   		
 		if event_type == 'image':
 			
-			model_name = 'llava'
+			# set model by command contained in data
+			for model in config.lmm_models:
+				# see if model command is in model prefix list
+				if model['prefix'] in command:
+					model_name = model['model_name']
 			
-			base64_string = data
+			if model_name == None:
+				model_name = config.lmm_default_model
 			
-			# prompt for LLaVA
+			# prompt for LMMs
 			if prompt == '':
-				# LLaVA doesn't support multilingual inferencing.
+				# Most multimodal models doesn't have multilingual output yet.
 				prompt = 'Describe in a few words what you see in the image.'
 			
 				#if config.language == 'de':
 				#	prompt = 'Beschreibe in wenigen Worten, was du auf dem Bild siehst.'
 			
-			# pass the base64 string to llava
+			# pass the base64 string to lmm
+			base64_string = data
+			
 			# (ollama api data)
 			prompt_data = {
 				"model": model_name,
@@ -659,12 +718,12 @@ class LLMPrompter():
 			if config.llm_source == 'localai':
 				response = json.loads(response_object.text)['choices'][0]['message']['content']
 			
-			logger.info(f'Response from ollama API: "{response}"')
+			logger.info(f'Response from {config.llm_source} API: "{response}"')
 			logger.debug(f'Response object: {response_object.text}')
 			
 		else:
 			response = response_object.status_code
-			logger.error(f'Bad response from ollama API: {response}')
+			logger.error(f'Bad response from {config.llm_source} API: {response}')
 			return None
 		
 		return response
