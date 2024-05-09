@@ -404,34 +404,38 @@ class MatrixBot():
 		
 		for i, r in enumerate(config.llm_models):
 			if i == 0:
-				_str += f"`{r['prefix']}`: {r['model_name']}"
+				llm_str += f"`{r['prefix']}`: {r['model_name']}"
 			if i > 0:
-				_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+				llm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
 		
 		for i, r in enumerate(config.lmm_models):
 			if i == 0:
-				_str += f"`{r['prefix']}`: {r['model_name']}"
+				lmm_str += f"`{r['prefix']}`: {r['model_name']}"
 			if i > 0:
-				_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+				lmm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+		
 		output = f'''
 ### Ollama-mx chat functions: \n\n
-#### Voice Messages / Audio Files\n\n
-Reply to an audio files with following options:\n\n
-**{config.audio_command}** - transcribe voice messages to text\n\n
-**{config.summary_command}** - summarize voice messages\n\n
+#### Transcribe Voice-Messages / Audio-Files\n\n
+_Reply to audio files with following options:_\n\n
+**`{config.audio_command}`** - transcribe voice messages to text\n\n
+**`{config.summary_command}`** - summarize voice messages\n\n
+##### Example\n
+<mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an aufio file.</blockquote></mx-reply>`{config.audio_command}`\n\n
+---
 #### Images\n\n
-Reply to an image file with the following options:\n\n
-**{config.image_command}** - describe whats on an image.\n\n
-**{config.image_command}** **`prompt`** - ask a specific question about an image\n\n
-#### Example\n
-<mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an image.</blockquote></mx-reply>`{config.image_command} what could that meme have to do with Maths?`\n\n
-\n\n\
-#### Multimodal Models:\n\n
-Change model for visual assist. **{config.image_command}** will launch **{config.lmm_default_model}** as default.
+_Reply to an image file with the following options:_\n\n
+**`{config.image_command}`** - describe in a few words, whats on an image.\n\n
+**`{config.image_command}`** **`prompt`** - ask a specific question about an image.`\n\n
+##### Multimodal Models:\n\n
 {lmm_str}
 \n\n
-#### Language Models::\n\n
-The following language models are available:\n\n
+_(**`{config.image_command}`** will launch **`{config.lmm_default_model}`** as default.)_\n\n
+##### Example\n
+<mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an image.</blockquote></mx-reply>`{config.image_command} what could that meme have to do with maths?`\n\n
+---
+#### Prompt Language Models:\n\n
+_The following language models are available:_\n\n
 {llm_str}
 \n\n
 '''

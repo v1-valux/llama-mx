@@ -11,14 +11,14 @@ auto_transcribe: false
 auto_summary: true
 auto_summary_words: 80
 
-storage:
-  # path for matrix-commander store
-  store_path: '/data/store'
-  # path for all received media files (named after their event_id)
-  media_path: '/data/media'
-  # path for matrix-commander credentials 
+storage: 
+  # path for matrix-commander
   # "/data" for docker container
   # "/home/username/.local/share/matrix-commander" for normal install
+  store_path: '/data/store'
+  # path for all received media files (named by event_id)
+  media_path: '/data/media'
+  # path for matrix-credentials
   credentials_path: '/data'
 
 # Speech-To-Text Models
@@ -70,7 +70,8 @@ lmm:
    - prefix: '#md'
      model_name: 'moondream:latest'
      language: 'en'
-  
+
+# Basic Commands
 commands:
   help: '#help'
   visual_assist: '#cc'
