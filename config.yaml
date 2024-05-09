@@ -1,9 +1,9 @@
 # LOCAL SETTINGS
 
-# Language for LLM and STT prompts
+# Language for LLM / LMM and STT prompts
 language: 'en'
 
-# auto transcribe messages if received
+# auto-transcribe messages if received
 ##WARNING: Be aware that every audio (-length) gets turned into text.
 auto_transcribe: false
 
