@@ -3,6 +3,10 @@
 # Language for LLM and STT prompts
 language: 'en'
 
+# auto transcribe messages if received
+##WARNING: Be aware that every audio (-length) gets turned into text.
+auto_transcribe: false
+
 # auto-summarize if text has more than the configured amount of words
 auto_summary: true
 auto_summary_words: 80
