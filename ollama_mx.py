@@ -5,6 +5,7 @@
 # docker run -d -p 11434:11434 --gpus=all -v ollama:/root/.ollama --name ollama ollama/ollama
 # docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice
 
+import pdb
 import requests
 import asyncio
 import json
@@ -225,15 +226,28 @@ class MatrixBot():
 		# better to avoid program errors as input for this 'if' here?
 		if stdout != b'':
 			
-			logger.debug(f'MC Output:{stdout.decode()}')
+			logger.debug(f'MC Output: {stdout.decode()}')
 			
 			try:
-				
 				event = stdout.decode()
-				event = json.loads(event)
+				
+				# split message
+				event_list = event.split('\n{"')
+				
+				# filter out the last "\n" 
+				event_list[-1] = event_list[-1][:-1]
+				
+				# add the '"{' delimiter
+				event_list = ['{"' + e for e in event_list[1:]]
+				
+				#extract dictionary
+				event_list = [json.loads(e) for e in event_list]
+				
+				# load last message in dictionary
+				event = event_list[-1]
 					
 			except Exception as e:
-				logger.debug(f"Parsing of multiple messages not yet implemented: {event}")
+				logger.exception(f'Error: Parsing of multiple messages not yet implemented.')
 				
 			try:
 				# process room info for response
@@ -367,7 +381,7 @@ class MatrixBot():
 						logger.debug(f'Received text message: {msg_body}')
 			
 			except Exception as e:
-				logger.debug(f"Error handling command '{command}' or prompt '{prompt}'")
+				logger.exception(f"Error handling command '{command}' or prompt '{prompt}'")
 		
 		return events, files, commands, texts, room_ids, sender_ids, related_events, related_files
 	
@@ -399,6 +413,7 @@ class MatrixBot():
 		'''
 		Help command /w model list
 		'''
+		
 		lmm_str = ''
 		llm_str = ''
 		
@@ -426,7 +441,7 @@ _Reply to audio files with following options:_\n\n
 #### Images\n\n
 _Reply to an image file with the following options:_\n\n
 **`{config.image_command}`** - describe in a few words, whats on an image.\n\n
-**`{config.image_command}`** **`prompt`** - ask a specific question about an image.`\n\n
+**`{config.image_command}`** **`prompt`** - ask a specific question about an image.\n\n
 ##### Multimodal Models:\n\n
 {lmm_str}
 \n\n

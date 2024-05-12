@@ -13,7 +13,7 @@ All commands customizable via `config.yaml`.
 
 **Known Quirks:**
 
-- bot cannot process any of multiple messages at the same time (e.g. startup after some downtime)
+- bot will only process the last of multiple messages received at the same time (e.g. startup after some downtime)
 - only media files received while the bot is running can be processed
 - media is downloaded automatically and stored unencrypted
 
