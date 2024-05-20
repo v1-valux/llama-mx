@@ -24,12 +24,12 @@ All commands customizable via `config.yaml`.
 - [ ] auto-delete media alternatively
 - [ ] chat-history support
 
-** Requirements:**
+**Requirements:**
 
 - docker
 - matrix-commander
 
-** Installation on Linux:**
+**Installation on Linux:**
 
 ```bash
 pip install matrix-commander
