@@ -24,14 +24,30 @@ All commands customizable via `config.yaml`.
 - [ ] auto-delete media alternatively
 - [ ] chat-history support
 
+** Requirements:**
+
+- docker
+- matrix-commander
+
+** Installation on Linux:**
+
+```bash
+pip install matrix-commander
+matrix-commander --login
+
+# fill out relevant information about your matrix-homeserver and choose a user impersonating your AI.
+
+docker run -d -p 11434:11434 --gpus=all -v ollama:/root/.ollama --name ollama ollama/ollama
+docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice
+
+```
+
 **Using the bot:**
 
 ```python
 python start-ollama-mx.py /path/to/config.yaml
 
 ```
-
-STT and LLM API services must be preinstalled.
 
 The code might be ugly and things could be more safe and much cleaner but this is a hobby-project and my very first python program.
 

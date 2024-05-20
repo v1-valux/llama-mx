@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-# pip install matrix-commander
-# matrix-commander --login
-# docker run -d -p 11434:11434 --gpus=all -v ollama:/root/.ollama --name ollama ollama/ollama
-# docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice
-
 import pdb
 import requests
 import asyncio
