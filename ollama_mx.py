@@ -233,19 +233,21 @@ class MatrixBot():
 				
 				# split message
 				event_list = event.split('\n{"')
-				
-				# filter out the last "\n" 
-				event_list[-1] = event_list[-1][:-1]
-				
-				# add the '"{' delimiter
-				event_list = ['{"' + e for e in event_list[1:]]
-				
-				#extract dictionary
-				event_list = [json.loads(e) for e in event_list]
-				
-				# load last message in dictionary
-				event = event_list[-1]
+				if len(event_list) > 1: 
+					# filter out the last "\n" 
+					event_list[-1] = event_list[-1][:-1]
 					
+					# add the '"{' delimiter
+					event_list = ['{"' + e for e in event_list[1:]]
+					
+					#extract dictionary
+					event_list = [json.loads(e) for e in event_list]
+					
+					# load last message in dictionary
+					event = event_list[-1]
+				else:
+				  event = json.loads(event)
+				  
 			except Exception as e:
 				logger.exception(f'Error: Parsing of multiple messages not yet implemented.')
 				
@@ -432,13 +434,14 @@ class MatrixBot():
 		output = f'''
 ### Ollama-mx chat functions: \n\n
 #### Transcribe Voice-Messages / Audio-Files\n\n
+---
 _Reply to audio files with following options:_\n\n
 **`{config.audio_command}`** - transcribe voice messages to text\n\n
 **`{config.summary_command}`** - summarize voice messages\n\n
-##### Example\n
+###### Example:\n
 <mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an aufio file.</blockquote></mx-reply>`{config.audio_command}`\n\n
+#### Explain Images\n\n
 ---
-#### Images\n\n
 _Reply to an image file with the following options:_\n\n
 **`{config.image_command}`** - describe in a few words, whats on an image.\n\n
 **`{config.image_command}`** **`prompt`** - ask a specific question about an image.\n\n
@@ -446,10 +449,10 @@ _Reply to an image file with the following options:_\n\n
 {lmm_str}
 \n\n
 _(**`{config.image_command}`** will launch **`{config.lmm_default_model}`** as default.)_\n\n
-##### Example\n
+###### Example\n
 <mx-reply><blockquote><a href="">In reply to</a> <a href="">@user:example.com</a><br>sent an image.</blockquote></mx-reply>`{config.image_command} what could that meme have to do with maths?`\n\n
----
 #### Prompt Language Models:\n\n
+---
 _The following language models are available:_\n\n
 {llm_str}
 \n\n
