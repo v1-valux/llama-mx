@@ -38,16 +38,16 @@ llm:
   port: 11434
   models:
    - prefix: '#eva'
-     model_name: 'eva-german:latest'
+     model_name: 'eva-german'
      language: 'de'
    - prefix: '#ml'
-     model_name: 'mistral-german:latest'
+     model_name: 'mistral-german'
      language: 'de'
    - prefix: '#sl'
      model_name: 'stablelm:12b'
      language: 'de'
    - prefix: '#text'
-     model_name: 'llama3:latest'
+     model_name: 'llama3'
      language: 'en'
    - prefix: '#code'
      model_name: 'starcoder2:7b'
@@ -62,14 +62,17 @@ lmm:
   port: 11434
   models:
    - prefix: '#lv'
-     model_name: 'llava:latest'
+     model_name: 'llava'
      language: 'en'
    - prefix: '#bv'
-     model_name: 'bakllava:latest'
+     model_name: 'bakllava'
      language: 'en'
    - prefix: '#md'
-     model_name: 'moondream:latest'
+     model_name: 'moondream'
      language: 'en'
+
+# how long should models be preserved in (v)ram (default: 5m)
+keepalive: '30m'
 
 # Basic Commands
 commands:

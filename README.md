@@ -1,5 +1,7 @@
 # ollama-mx
 
+## Prototype - not for production use
+
 A [matrix-commander](https://github.com/8go/matrix-commander) bot with AI functions for transcribing Voice Messages and prompting LLMs and LMMs (Large Multimodal Models) in [matrix](https://matrix.org/) chatrooms.
 
 **Core functions:**
@@ -13,6 +15,8 @@ All commands customizable via `config.yaml`.
 
 **Known Quirks:**
 
+- bot can will accept room-invitations automatically
+- bot has access to all media files within joined rooms (and thus can theoretically leak data to other users via event_id bruteforcing)
 - bot will only process the last of multiple messages received at the same time (e.g. startup after some downtime)
 - only media files received while the bot is running can be processed
 - media is downloaded automatically and stored unencrypted

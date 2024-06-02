@@ -114,6 +114,9 @@ class Config(object):
 		self.help_command = self._get_cfg(
 			["commands", "help"], required=True, default='')
 		
+		self.keepalive = self._get_cfg(
+			["keepalive"], required=False, default="5m")
+		
 		# Auto-Transcribtion
 		
 		self.auto_transcribe = self._get_cfg(
@@ -416,15 +419,15 @@ class MatrixBot():
 		
 		for i, r in enumerate(config.llm_models):
 			if i == 0:
-				llm_str += f"`{r['prefix']}`: {r['model_name']}"
+				llm_str += f"`{r['prefix']}`: {r['model_name']} ({r['language']})"
 			if i > 0:
-				llm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+				llm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']} ({r['language']})"
 		
 		for i, r in enumerate(config.lmm_models):
 			if i == 0:
-				lmm_str += f"`{r['prefix']}`: {r['model_name']}"
+				lmm_str += f"`{r['prefix']}`: {r['model_name']} ({r['language']})"
 			if i > 0:
-				lmm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']}"
+				lmm_str += '\n\n' + f"`{r['prefix']}`: {r['model_name']} ({r['language']})"
 		
 		output = f'''
 ### Ollama-mx chat functions: \n\n
@@ -536,7 +539,7 @@ _The following language models are available:_\n\n
 						# process LLM command 
 						elif command in self.llm_commands and texts[current] != '':
 							try:
-								output = asyncio.run(self.invoke_LLM.generate(event_type="text", command=command, prompt=texts[current]))
+								output = asyncio.run(self.invoke_LLM.generate(event_type="text", data='', command=command, prompt=texts[current]))
 							except Exception as e:
 								logger.exception(f"Exception occured: {e}")
 						
@@ -599,7 +602,7 @@ class LLMPrompter():
 		
 		# Set URL for the ollama server
 		if config.llm_source == 'ollama':
-			llm_url =  f'http://{config.llm_host}:{config.llm_port}/api/generate'
+			llm_url =  f'http://{config.llm_host}:{config.llm_port}/v1/chat/completions'
 		
 		# Set URL for the localai server
 		if config.llm_source == 'localai':
@@ -646,6 +649,8 @@ class LLMPrompter():
 					prompt = f'Mensaje de voz:\n\n"{prompt}"\n\n"Reformula el mensaje para que contenga los mensajes clave, así como nombres, lugares u horas y otra información relevante de forma breve y concisa."'
 				if config.language == 'gr':
 					prompt = f'Φωνητικό μήνυμα:\n\n"{prompt}"\n\n"Επαναδιατυπώστε το μήνυμα έτσι ώστε να περιέχει τα βασικά μηνύματα καθώς και ονόματα, τόπους ή χρόνους και άλλες σχετικές πληροφορίες σύντομα και περιεκτικά."'
+				if config.language == 'pl':
+					prompt = f'Sprachnachricht:\n\n"{prompt}"\n\n"Przeformułuj wiadomość tak, aby zawierała kluczowe komunikaty, a także nazwy, miejsca lub godziny oraz inne istotne informacje w zwięzły sposób."'
 				if config.language == 'ru':
 					prompt = f'Голосовое сообщение:\n\n"{prompt}"\n\n"Перефразируйте сообщение так, чтобы в нем коротко и ясно содержались ключевые слова, а также имена, места или время и другая необходимая информация."'
 				if config.language == 'ua':
@@ -658,28 +663,40 @@ class LLMPrompter():
 			# ollama api data
 			if config.llm_source == 'ollama':
 				
+				# prompt_data = {
+				# 	"model": model_name,
+				# 	"stream": False,
+				# 	"prompt": prompt,
+				# 	"keep_alive": "30m",
+				# 	"options": {
+				# 		"temperature": 0.2,
+				# 		"num_thread": 4,
+				# 		"num_gpu": 1,
+				# 		"main_gpu": 0,
+				# 		"low_vram": False
+				# 	}
+				# }
 				prompt_data = {
-					'model': model_name,
-					'stream': False,
-					'prompt': prompt,
-					'keep_alive': '30m',
-					'options': {
-						'temperature': 0.2,
-						'num_thread': 4,
-						'num_gpu': 1,
-						'main_gpu': 0,
-						'low_vram': False
+					"model": model_name,
+					"stream": False,
+					"messages": [{'role': 'user', 'content': prompt}],
+					"temperature": 0.2,
+					"keep_alive": config.keepalive,
+					"options": {
+						"num_thread": 4,
+						# "num_gpu": 1,
+						# "main_gpu": 0,
+						# "low_vram": False
 					}
 				}
-			
 			# localai api data
 			if config.llm_source == 'localai':
 				
 				prompt_data = {
-					'model': model_name,
-					'stream': False,
-					'messages': [{'role': 'user', 'content': prompt}],
-					'temperature': 0.3,
+					"model": model_name,
+					"stream": False,
+				  "messages": [{'role': 'user','content': prompt}],
+					"temperature": 0.2
 				}
   		
 		if event_type == 'image':
@@ -708,18 +725,25 @@ class LLMPrompter():
 			prompt_data = {
 				"model": model_name,
 				"stream": False,
-				"prompt": prompt,
-				"images": [
-					base64_string
-				],
-				'keep_alive': '10m',
-				'options': {
-					'num_thread': 4,
-					'num_gpu': 1,
-					'main_gpu': 0,
-					'low_vram': False
+				"messages": [{'role': 'user','content': prompt, 'images': [base64_string]}],
+				"temperature": 0.2,
+				"keep_alive": config.keepalive,
+				"options": {
+					"num_thread": 4,
+					# "num_gpu": 1,
+					# "main_gpu": 0,
+					# "low_vram": False
 				}
 			}
+			# localai api data
+			if config.llm_source == 'localai':
+				
+				prompt_data = {
+					"model": model_name,
+					"stream": False,
+				  "messages": [{'role': 'user','content': prompt, 'images': [base64_string]}],
+					"temperature": 0.2
+				}
 		
 		logger.info(f'Prompting "{model_name}" via {config.llm_source} API ..')
 		logger.debug(f'Prompt: "{prompt}"')
@@ -729,13 +753,9 @@ class LLMPrompter():
 		
 		if response_object.status_code == 200:
 			
-			if config.llm_source == 'ollama':
-				response = json.loads(response_object.text)['response']
+			response = json.loads(response_object.text)['choices'][0]['message']['content']
 			
-			if config.llm_source == 'localai':
-				response = json.loads(response_object.text)['choices'][0]['message']['content']
-			
-			logger.info(f'Response from {config.llm_source} API: "{response}"')
+			logger.debug(f'Response from {config.llm_source} API: "{response}"')
 			logger.debug(f'Response object: {response_object.text}')
 			
 		else:
